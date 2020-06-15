@@ -153,9 +153,9 @@ public class GMTool extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser fileChooser = new JFileChooser("D:/");
 				if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-					
+					// 获取所选文件的文件路径
 					String fileName = fileChooser.getSelectedFile().getPath();
-					
+					// 将获取的文件路径传给textFieldHashInput
 					textFieldHashInput.setText(fileName);
 				}
 			}
@@ -172,18 +172,19 @@ public class GMTool extends JFrame {
 		lblNewLabel.setBounds(25, 69, 58, 15);
 		panel.add(lblNewLabel);
 		
+		
+		// 使用SM3计算哈希值
 		JButton btnHashCalculate = new JButton("\u8BA1\u7B97");
 		btnHashCalculate.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				textAreaHashOutput.setText("");			
-				
+				// 计算文件哈希值
 				if (comboBox_HashType.getSelectedIndex() == 0) {
 					String fileName = textFieldHashInput.getText();
 					fileName = fileName.replace('\\', '/');
 					try (FileInputStream fis = new FileInputStream(fileName)){						
 							MessageDigest md = MessageDigest.getInstance("SM3");
 							try (DigestInputStream dis = new DigestInputStream(fis, md)) {
-								
 								byte[] buffer = new byte[1024];
 								while(dis.read(buffer) != -1);
 							}
@@ -199,6 +200,7 @@ public class GMTool extends JFrame {
 						e1.printStackTrace();
 					}
 				}else {
+					// 计算字符串哈希值
 					String s = textFieldHashInput.getText();
 					MessageDigest md = null;
 					try {
@@ -239,9 +241,9 @@ public class GMTool extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser fileChooser = new JFileChooser("D:/");
 				if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-					//
+					// 获取所选文件的文件路径
 					String fileName = fileChooser.getSelectedFile().getPath();
-					//
+					// 将获取的文件路径传给textFieldEncryptInput
 					textFieldEncryptInput.setText(fileName);
 				}
 			}
@@ -281,11 +283,11 @@ public class GMTool extends JFrame {
 		JButton btnEncrypt = new JButton("\u52A0\u5BC6");
 		btnEncrypt.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				// 
+				// 加密操作
 				String plainFileName = textFieldEncryptInput.getText();
 				String cipherFileName = plainFileName + ".enc";
-				String algorithm = null;   // 
-				int algType = 0; // ZUC-128 = 0; ZUC-256 = 1; SM4 = 2;
+				String algorithm = null;   // 定义算法变量
+				int algType = 0; // 定义算法类型变量，等下要写在加密文件里，以便解密时判断加密算法，ZUC-128 = 0; ZUC-256 = 1; SM4 = 2;
 				int ivSize = 16;
 				char[] password = passwordFieldEncryptPassword.getPassword();				
 				int keySize = 128;
@@ -319,13 +321,13 @@ public class GMTool extends JFrame {
 					
 					
 					try (FileOutputStream fos = new FileOutputStream(cipherFileName)) {
-						
+						// 在加密文件开头写入加密算法类型，占用一个字节
 						fos.write(algType);
-						
+						// 接着在加密文件里写入密钥大小，占用一个字节
 						fos.write(keySize / 8);
-						
+						// 接着在加密文件里写入iv大小，占用一个字节
 						fos.write(ivSize);
-
+						// 接着在加密文件里写入iv值
 						fos.write(ivValue);
 						try (FileInputStream fis = new FileInputStream(plainFileName);
 								CipherInputStream cis = new CipherInputStream(fis, cipher)) {
@@ -367,10 +369,10 @@ public class GMTool extends JFrame {
 		btnEncrypt.setBounds(553, 46, 96, 60);
 		panel_Encryptor.add(btnEncrypt);
 		
+		// 解密文件操作
 		JButton btnDecrypt = new JButton("\u89E3\u5BC6");
 		btnDecrypt.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				// 
 				String cipherFileName = textFieldEncryptInput.getText(); // 
 				String decryptedFileName = cipherFileName + ".dec";
 				int algType = 0; // ZUC-128 = 0; ZUC-256 = 1; SM4 = 2;
@@ -380,14 +382,16 @@ public class GMTool extends JFrame {
 				char[] password = passwordFieldEncryptPassword.getPassword(); // 
 
 				try(FileInputStream fis = new FileInputStream(cipherFileName)) {
+					// 从加密文件中读取加密算法类型
 					algType = fis.read();
+					// 从加密文件中读取密钥长度
 					keySize = fis.read() * 8; 
-
+					// 从加密文件中读取iv长度
 					ivSize = fis.read(); 
-
+					// 从加密文件中读取iv值
 					byte[] ivValue = new byte[ivSize]; 
 					fis.read(ivValue);
-
+					// 重新恢复iv
 					IvParameterSpec iv = new IvParameterSpec(ivValue);
 					SecretKeySpec key = passwordToKey(new String(password), keySize);
 					if (algType == 0 ) {
@@ -397,8 +401,9 @@ public class GMTool extends JFrame {
 					}else {
 						algorithm = "SM4";
 					}
-					
+					// 创建cipher对象
 					Cipher cipher = Cipher.getInstance(algorithm, "BC");
+					// 配置cipher对象
 					cipher.init(Cipher.DECRYPT_MODE, key, iv);
 					try (CipherInputStream cis = new CipherInputStream(fis, cipher);
 							FileOutputStream fos = new FileOutputStream(decryptedFileName)) {
@@ -529,16 +534,19 @@ public class GMTool extends JFrame {
 		btnCreateKeyStore.setBounds(265, 80, 97, 23);
 		panel_3.add(btnCreateKeyStore);
 		
+		// 签名操作
 		JButton btnSignature = new JButton("\u7B7E\u540D");
 		btnSignature.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String toSignFileName = textFieldPendingFileInput.getText();
 				String signFileName = toSignFileName + ".sig";
 				String keyStoreName = textFieldKeyStoreInput.getText();
+				// 输入密钥库口令
 				char[] keyStorePassWD = JOptionPane.showInputDialog("密钥库口令:").toCharArray();
 				KeyStore keyStore = null;			 
 				try (FileInputStream fis = new FileInputStream(keyStoreName)){
 					keyStore = KeyStore.getInstance("PKCS12");
+					// 创建KeyStore对象，并从密钥库文件中读入内容
 					keyStore.load(fis, keyStorePassWD);
 				} catch (FileNotFoundException e1) {
 					// TODO Auto-generated catch block
@@ -588,16 +596,16 @@ public class GMTool extends JFrame {
 		btnSignature.setBounds(562, 57, 97, 47);
 		panel_Signature.add(btnSignature);
 		
+		
+		// 验证操作
 		JButton btnVerification = new JButton("\u9A8C\u8BC1");
 		btnVerification.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				Security.addProvider(new BouncyCastleProvider());
 				String verifiedFileName = textFieldPendingFileInput.getText();
 				String signFileName = textFieldSigInput.getText();
-				String keyStoreName = textFieldKeyStoreInput.getText();
-				
-				ECPublicKey publicKey = null;
-				
+				String keyStoreName = textFieldKeyStoreInput.getText();				
+				ECPublicKey publicKey = null;				
 				KeyStore keyStore = null;
 				try {
 					keyStore = KeyStore.getInstance("PKCS12");
@@ -773,11 +781,12 @@ public class GMTool extends JFrame {
 							if (checkBoxs_Mac[i].isSelected()) {
 								KeyGenerator keyGenerator = KeyGenerator.getInstance(macAlgsType[i], "BC");
 								SecretKey secretKey = keyGenerator.generateKey();
+								// 随机生成iv
 								byte[] ivValue = new byte[ivSize[i]];
 								SecureRandom random = new SecureRandom();
 								random.nextBytes(ivValue);
 								IvParameterSpec iv = new IvParameterSpec(ivValue);
-								
+								// 创建Mac对象
 								Mac mac = Mac.getInstance(macAlgs[i], "BC");
 								mac.init(secretKey, iv);
 								
@@ -858,6 +867,7 @@ public class GMTool extends JFrame {
 			return key;
 		}
 		
+		// 验证函数
 		public static boolean verifyFile(String fileToVerify, PublicKey key, String signValueFile) throws Exception {
 			// try-with-resource语句创建的流不需要手动关闭
 			Security.addProvider(new BouncyCastleProvider());
@@ -880,7 +890,8 @@ public class GMTool extends JFrame {
 				return signature.verify(signatureValue);
 			}
 		}
-
+		
+		// 签名函数
 		public static void signFile(String fileToSign, PrivateKey key, String signValueFile) throws Exception {
 			// try-with-resource语句创建的流不需要手动关闭
 			try (FileInputStream fis = new FileInputStream(fileToSign);
@@ -902,6 +913,7 @@ public class GMTool extends JFrame {
 			}
 		}
 		
+		// 创建密钥库函数
 		public static String createKeyStore() throws Exception {
 			KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC", "BC");
 			ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec("secp256r1");
